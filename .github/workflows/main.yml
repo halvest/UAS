@@ -55,21 +55,26 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Deploy to Minikube
+        shell: bash
         run: |
           echo "🚀 Deploying to Minikube..."
           kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/login-app:${{ github.sha }}
 
       - name: Verify Deployment Rollout
+        shell: bash
         run: |
           echo "🔍 Verifying deployment rollout status..."
-          kubectl rollout status deployment/login-app-deployment || {
-            echo "❌ Deployment failed. Check logs."; exit 1;
-          }
+          if ! kubectl rollout status deployment/login-app-deployment --timeout=60s; then
+            echo "❌ Deployment failed. Check logs."
+            exit 1
+          fi
 
       - name: Health Check - /metrics
+        shell: bash
         run: |
           echo "📈 Checking /metrics endpoint..."
           sleep 10
-          curl -s http://localhost:3000/metrics || {
-            echo "❌ Metrics endpoint not reachable."; exit 1;
-          }
+          if ! curl -s --fail http://localhost:3000/metrics; then
+            echo "❌ Metrics endpoint not reachable."
+            exit 1
+          fi
