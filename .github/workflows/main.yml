@@ -25,13 +25,9 @@ jobs:
         run: npm test
 
       - name: SonarQube Scan
-        run: |
-          docker run --rm --network=host `
-            -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" `
-            -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" `
-            -v "${{ github.workspace }}:/usr/src" `
-            sonarsource/sonar-scanner-cli
+        run: docker run --rm --network=host -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" -v "${{ github.workspace }}:/usr/src" sonarsource/sonar-scanner-cli
         shell: powershell
+
 
   build_and_push:
     needs: test_and_analyze
@@ -53,13 +49,19 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:v1.0
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:${{ github.sha }}
 
-  deploy:
-    needs: build_and_push
-    runs-on: self-hosted
-    steps:
-      - name: Deploy to Minikube
-        run: |
-          echo "Deploying to Minikube..."
-          kubectl set image deployment/login-app-deployment=${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:v1.0
+deploy:
+  needs: build_and_push
+  runs-on: self-hosted
+  steps:
+    - name: Deploy to Minikube
+      run: |
+        echo "🚀 Deploying to Minikube..."
+        kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:v1.0
+
+    - name: Verify Deployment Rollout
+      run: |
+        echo "🔍 Verifying deployment rollout status..."
+        kubectl rollout status deployment/login-app-deployment
+
