@@ -57,32 +57,32 @@ jobs:
       - name: Deploy to Minikube
         shell: powershell
         run: |
-          Write-Host "🚀 Deploying to Minikube..."
+          Write-Host "Deploying to Minikube..."
           kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/login-app:${{ github.sha }}
 
       - name: Verify Deployment Rollout
         shell: powershell
         run: |
-          Write-Host "🔍 Verifying deployment rollout status..."
+          Write-Host "Verifying deployment rollout status..."
           $status = kubectl rollout status deployment/login-app-deployment --timeout=60s
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "❌ Deployment failed. Check logs."
+            Write-Error "Deployment failed. Check logs."
             exit 1
           }
 
       - name: Health Check - /metrics
         shell: powershell
         run: |
-          Write-Host "📈 Checking /metrics endpoint..."
+          Write-Host "Checking /metrics endpoint..."
           Start-Sleep -Seconds 10
           try {
             $response = Invoke-WebRequest -Uri "http://localhost:3000/metrics" -UseBasicParsing
             if ($response.StatusCode -ne 200) {
-              Write-Error "❌ Metrics endpoint returned status code $($response.StatusCode)"
+              Write-Error "Metrics endpoint returned status code $($response.StatusCode)"
               exit 1
             }
           } catch {
-            Write-Error "❌ Metrics endpoint not reachable."
+            Write-Error "Metrics endpoint not reachable."
             exit 1
           }
 
