@@ -25,8 +25,12 @@ jobs:
         run: npm test
 
       - name: SonarQube Scan
-        run: docker run --rm --network=host -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" -v "${{ github.workspace }}:/usr/src" sonarsource/sonar-scanner-cli
         shell: powershell
+        run: |
+          docker run --rm -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" `
+            -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" `
+            -v "${{ github.workspace }}:/usr/src" `
+            sonarsource/sonar-scanner-cli
 
   build_and_push:
     needs: test_and_analyze
@@ -55,26 +59,33 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Deploy to Minikube
-        shell: bash
+        shell: powershell
         run: |
-          echo "🚀 Deploying to Minikube..."
+          Write-Host "🚀 Deploying to Minikube..."
           kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/login-app:${{ github.sha }}
 
       - name: Verify Deployment Rollout
-        shell: bash
+        shell: powershell
         run: |
-          echo "🔍 Verifying deployment rollout status..."
-          if ! kubectl rollout status deployment/login-app-deployment --timeout=60s; then
-            echo "❌ Deployment failed. Check logs."
+          Write-Host "🔍 Verifying deployment rollout status..."
+          kubectl rollout status deployment/login-app-deployment --timeout=60s
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "❌ Deployment failed. Check logs."
             exit 1
-          fi
+          }
 
       - name: Health Check - /metrics
-        shell: bash
+        shell: powershell
         run: |
-          echo "📈 Checking /metrics endpoint..."
-          sleep 10
-          if ! curl -s --fail http://localhost:3000/metrics; then
-            echo "❌ Metrics endpoint not reachable."
+          Write-Host "📈 Checking /metrics endpoint..."
+          Start-Sleep -Seconds 10
+          try {
+            $response = Invoke-WebRequest -Uri "http://localhost:3000/metrics" -UseBasicParsing -TimeoutSec 10
+            if ($response.StatusCode -ne 200) {
+              Write-Error "❌ Metrics endpoint not reachable (StatusCode: $($response.StatusCode))"
+              exit 1
+            }
+          } catch {
+            Write-Error "❌ Metrics endpoint not reachable. $_"
             exit 1
-          fi
+          }
