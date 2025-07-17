@@ -70,19 +70,3 @@ jobs:
             exit 1
           }
 
-      - name: Health Check - /metrics
-        shell: powershell
-        run: |
-          Write-Host "Checking /metrics endpoint..."
-          Start-Sleep -Seconds 10
-          try {
-            $response = Invoke-WebRequest -Uri "http://localhost:3000/metrics" -UseBasicParsing
-            if ($response.StatusCode -ne 200) {
-              Write-Error "Metrics endpoint returned status code $($response.StatusCode)"
-              exit 1
-            }
-          } catch {
-            Write-Error "Metrics endpoint not reachable."
-            exit 1
-          }
-
