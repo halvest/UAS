@@ -28,7 +28,6 @@ jobs:
         run: docker run --rm --network=host -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" -v "${{ github.workspace }}:/usr/src" sonarsource/sonar-scanner-cli
         shell: powershell
 
-
   build_and_push:
     needs: test_and_analyze
     runs-on: self-hosted
@@ -51,17 +50,26 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:${{ github.sha }}
 
-deploy:
-  needs: build_and_push
-  runs-on: self-hosted
-  steps:
-    - name: Deploy to Minikube
-      run: |
-        echo "🚀 Deploying to Minikube..."
-        kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:v1.0
+  deploy:
+    needs: build_and_push
+    runs-on: self-hosted
+    steps:
+      - name: Deploy to Minikube
+        run: |
+          echo "🚀 Deploying to Minikube..."
+          kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:${{ github.sha }}
 
-    - name: Verify Deployment Rollout
-      run: |
-        echo "🔍 Verifying deployment rollout status..."
-        kubectl rollout status deployment/login-app-deployment
+      - name: Verify Deployment Rollout
+        run: |
+          echo "🔍 Verifying deployment rollout status..."
+          kubectl rollout status deployment/login-app-deployment || {
+            echo "❌ Deployment failed. Check logs."; exit 1;
+          }
 
+      - name: Health Check - /metrics
+        run: |
+          echo "📈 Checking /metrics endpoint..."
+          sleep 10
+          curl -s http://localhost:3000/metrics || {
+            echo "❌ Metrics endpoint not reachable."; exit 1;
+          }
