@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dasbor | Proyek DevOps</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        /* Menggunakan CSS Variables untuk tema yang konsisten */
+        :root {
+            --bg-grad-start: #4facfe;
+            --bg-grad-end: #00f2fe;
+            --container-bg: rgba(255, 255, 255, 0.2);
+            --container-border: rgba(255, 255, 255, 0.4);
+            --text-primary: #1a253c;
+            --text-secondary: #3a4861;
+            --card-bg: rgba(255, 255, 255, 0.4);
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --logout-bg: #e74c3c;
+            --logout-hover-bg: #c0392b;
+            --toggle-bg: #283655;
+            --toggle-fg: #fdd835;
+
+            --dark-bg-grad-start: #1e1e2f;
+            --dark-bg-grad-end: #2a2a40;
+            --dark-container-bg: rgba(47, 47, 65, 0.4);
+            --dark-container-border: rgba(255, 255, 255, 0.1);
+            --dark-text-primary: #f1f1f1;
+            --dark-text-secondary: #b0b0d0;
+            --dark-card-bg: rgba(0, 0, 0, 0.2);
+            --dark-shadow-color: rgba(0, 0, 0, 0.25);
+            --dark-toggle-bg: #7F8C8D;
+            --dark-toggle-fg: #f1c40f;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        html.dark {
+            --bg-grad-start: var(--dark-bg-grad-start);
+            --bg-grad-end: var(--dark-bg-grad-end);
+            --container-bg: var(--dark-container-bg);
+            --container-border: var(--dark-container-border);
+            --text-primary: var(--dark-text-primary);
+            --text-secondary: var(--dark-text-secondary);
+            --card-bg: var(--dark-card-bg);
+            --shadow-color: var(--dark-shadow-color);
+            --toggle-bg: var(--dark-toggle-bg);
+            --toggle-fg: var(--dark-toggle-fg);
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(120deg, var(--bg-grad-start), var(--bg-grad-end));
+            transition: background 0.4s ease-in-out;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 960px;
+            background-color: var(--container-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--container-border);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px var(--shadow-color);
+            position: relative;
+            transition: all 0.4s ease;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--container-border);
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--text-primary);
+        }
+
+        .logout-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background-color: var(--logout-bg);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .logout-button:hover {
+            background-color: var(--logout-hover-bg);
+            transform: scale(1.05);
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid var(--container-border);
+            color: var(--text-primary);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px var(--shadow-color);
+        }
+        .card h3 { margin-bottom: 10px; font-size: 1.2rem; }
+        .card p { font-size: 0.9rem; color: var(--text-secondary); }
+        .card i { font-size: 2rem; margin-bottom: 15px; color: var(--text-primary); }
+
+        /* --- Updated Toggle Switch Styles --- */
+        .theme-switch-wrapper {
+            position: fixed; /* Diubah ke fixed agar menempel di viewport */
+            bottom: 25px;    /* Posisi di bawah */
+            right: 25px;     /* Posisi di kanan */
+            z-index: 1000;   /* Memastikan tombol selalu di atas */
+            display: flex;
+            align-items: center;
+        }
+        .theme-switch {
+            display: inline-block;
+            height: 34px;
+            position: relative;
+            width: 60px;
+        }
+        .theme-switch input {
+            display: none;
+        }
+        .slider {
+            background-color: var(--toggle-bg);
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+        }
+        .slider:before {
+            background-color: #fff;
+            bottom: 4px;
+            content: "";
+            height: 26px;
+            left: 4px;
+            position: absolute;
+            transition: .4s;
+            width: 26px;
+        }
+        input:checked + .slider {
+            background-color: var(--toggle-bg);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
+        .slider .fa-sun, .slider .fa-moon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: var(--toggle-fg);
+            transition: opacity 0.4s ease;
+        }
+        .slider .fa-moon {
+            left: 8px;
+            opacity: 1;
+        }
+        .slider .fa-sun {
+            right: 8px;
+            opacity: 0;
+        }
+        input:checked + .slider .fa-moon {
+            opacity: 0;
+        }
+        input:checked + .slider .fa-sun {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <header class="header">
+            <h1>Dasbor DevOps</h1>
+            <button class="logout-button" id="logoutButton">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </button>
+        </header>
+
+        <main class="content">
+            <div class="card-grid">
+                <div class="card">
+                    <i class="fas fa-server"></i>
+                    <h3>Status Server</h3>
+                    <p>Semua sistem berjalan normal. Uptime 99.98%.</p>
+                </div>
+                <div class="card">
+                    <i class="fas fa-cogs"></i>
+                    <h3>Deployment Terakhir</h3>
+                    <p>Build #1.2.5 berhasil di-deploy 2 jam yang lalu.</p>
+                </div>
+                <div class="card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3>Analitik Pengguna</h3>
+                    <p>1,204 pengguna aktif dalam 24 jam terakhir.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Tombol toggle dipindahkan ke sini -->
+    <div class="theme-switch-wrapper">
+        <label class="theme-switch" for="theme-toggle">
+            <input type="checkbox" id="theme-toggle" />
+            <div class="slider round">
+                <i class="fas fa-moon"></i>
+                <i class="fas fa-sun"></i>
+            </div>
+        </label>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const logoutButton = document.getElementById('logoutButton');
+            const themeToggle = document.getElementById('theme-toggle');
+            const htmlElement = document.documentElement;
+
+            // --- Dark Mode Logic ---
+            const applyDarkMode = (isDark) => {
+                htmlElement.classList.toggle('dark', isDark);
+                localStorage.setItem('darkMode', isDark);
+                themeToggle.checked = isDark;
+            };
+
+            themeToggle.addEventListener('change', () => {
+                applyDarkMode(themeToggle.checked);
+            });
+
+            const savedTheme = localStorage.getItem('darkMode');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyDarkMode(savedTheme !== null ? savedTheme === 'true' : prefersDark);
+
+            // --- Logout Logic ---
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/logout', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.href = '/';
+                    } else {
+                        alert(data.message);
+                    }
+                } catch (error) {
+                    console.error('Error saat logout:', error);
+                    alert('Gagal menghubungi server untuk logout.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

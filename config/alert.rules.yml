@@ -1,0 +1,30 @@
+groups:
+- name: application_alerts
+  rules:
+  # Aturan 1: Peringatan jika sebuah instance (aplikasi/target) mati.
+  - alert: InstanceDown
+    # Ekspresi: 'up' adalah metrik bawaan Prometheus. Jika nilainya 0, instance dianggap mati.
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "Layanan {{ $labels.job }} di instance {{ $labels.instance }} telah mati selama lebih dari 1 menit."
+
+  # Aturan 2: Peringatan jika tingkat error server (HTTP 5xx) tinggi.
+  - alert: HighServerErrorRate
+    # Ekspresi: Menghitung persentase request dengan status code 5xx selama 5 menit terakhir.
+    # Peringatan aktif jika > 5%.
+    expr: |
+      (
+        sum(rate(login_requests_total{status="error"}[5m]))
+      /
+        sum(rate(login_requests_total[5m]))
+      ) * 100 > 5
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Tingkat Error Server Tinggi pada {{ $labels.app }}"
+      description: "Aplikasi {{ $labels.app }} mengalami tingkat error server lebih dari 5% selama 2 menit terakhir. Nilai saat ini: {{ $value | printf `%.2f` }}%."

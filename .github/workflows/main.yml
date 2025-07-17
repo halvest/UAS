@@ -1,0 +1,65 @@
+name: CI/CD Pipeline DevOps
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  test_and_analyze:
+    runs-on: self-hosted 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests with coverage
+        run: npm test
+
+      - name: SonarQube Scan
+        run: |
+          docker run --rm --network=host `
+            -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" `
+            -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" `
+            -v "${{ github.workspace }}:/usr/src" `
+            sonarsource/sonar-scanner-cli
+        shell: powershell
+
+  build_and_push:
+    needs: test_and_analyze
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:v1.0
+
+  deploy:
+    needs: build_and_push
+    runs-on: self-hosted
+    steps:
+      - name: Deploy to Minikube
+        run: |
+          echo "Deploying to Minikube..."
+          kubectl set image deployment/login-app-deployment=${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:v1.0

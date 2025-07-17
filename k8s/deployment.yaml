@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: login-app-deployment 
+  labels:
+    app: login-app 
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: login-app 
+  template:
+    metadata:
+      labels:
+        app: login-app
+      annotations:
+        prometheus.io/scrape: 'true'   # Memberitahu Prometheus untuk men-scrape metrik dari Pod ini.
+        prometheus.io/port: '3000'     # Port tempat endpoint /metrics berada.
+        prometheus.io/path: '/metrics' # Path ke endpoint metrik.
+    spec:
+      containers:
+      - name: web-app # Nama container.
+        image: daizean/login-app:v1.0
+        ports:
+        - containerPort: 3000
