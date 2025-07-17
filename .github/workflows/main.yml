@@ -61,12 +61,25 @@ jobs:
           kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/login-app:${{ github.sha }}
 
       - name: Verify Deployment Rollout
+        id: verify_rollout # Memberi ID pada step ini agar bisa direferensikan
         shell: powershell
         run: |
           Write-Host "Verifying deployment rollout status..."
-          $status = kubectl rollout status deployment/login-app-deployment --timeout=60s
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "Deployment failed. Check logs."
-            exit 1
+          # Menggunakan try-catch agar pipeline tidak langsung berhenti jika gagal
+          try {
+            kubectl rollout status deployment/login-app-deployment --timeout=120s
+          } catch {
+            # Mengatur variabel agar bisa dideteksi oleh step selanjutnya
+            $host.SetShouldExit(1)
           }
-
+      
+      # --- PENAMBAHAN STEP ROLLBACK OTOMATIS ---
+      # Step ini hanya akan berjalan jika step 'verify_rollout' di atas gagal.
+      - name: Rollback on Failure
+        if: failure() # Kondisi ini akan true jika step sebelumnya gagal
+        shell: powershell
+        run: |
+          Write-Host "Deployment failed. Rolling back to the previous version..."
+          kubectl rollout undo deployment/login-app-deployment
+          exit 1 # Keluar dengan status error untuk menandai bahwa job ini gagal
+        # ------------------------------------------

@@ -57,6 +57,15 @@ app.get('/metrics', async (req, res) => {
     }
 });
 
+// --- PENAMBAHAN HEALTH CHECK ENDPOINT ---
+// Endpoint ini akan digunakan oleh Kubernetes untuk memeriksa apakah aplikasi sehat.
+app.get('/health', (req, res) => {
+    // Untuk saat ini, kita hanya mengirim status 'UP'.
+    // Di aplikasi nyata, ini bisa memeriksa koneksi database atau dependensi lainnya.
+    res.status(200).json({ status: 'UP' });
+});
+// -----------------------------------------
+
 app.get('/', (req, res) => {
     if (req.session.isLoggedIn) {
         res.redirect('/dashboard');

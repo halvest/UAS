@@ -6,6 +6,12 @@ metadata:
     app: login-app 
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  progressDeadlineSeconds: 600
   selector:
     matchLabels:
       app: login-app 
@@ -14,12 +20,20 @@ spec:
       labels:
         app: login-app
       annotations:
-        prometheus.io/scrape: 'true'   # Memberitahu Prometheus untuk men-scrape metrik dari Pod ini.
-        prometheus.io/port: '3000'     # Port tempat endpoint /metrics berada.
-        prometheus.io/path: '/metrics' # Path ke endpoint metrik.
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '3000'
+        prometheus.io/path: '/metrics'
     spec:
       containers:
-      - name: web-app # Nama container.
-        image: daizean/login-app:v1.0
+      - name: web-app 
+        image: daizean/login-app:v1.0 
         ports:
         - containerPort: 3000
+        readinessProbe:
+          httpGet:
+            path: /health  # Path ke endpoint health check yang dibuat di app.js
+            port: 3000
+          initialDelaySeconds: 5  # Tunggu 5 detik setelah container start sebelum probe pertama
+          periodSeconds: 10       # Ulangi probe setiap 10 detik
+          failureThreshold: 3     # Anggap pod gagal setelah 3x percobaan probe gagal
+        # ------------------------------------
