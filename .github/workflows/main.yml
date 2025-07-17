@@ -48,7 +48,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/login-app:${{ github.sha }}
 
   deploy:
     needs: build_and_push
@@ -57,7 +57,7 @@ jobs:
       - name: Deploy to Minikube
         run: |
           echo "🚀 Deploying to Minikube..."
-          kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/daizean/login-app:${{ github.sha }}
+          kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/login-app:${{ github.sha }}
 
       - name: Verify Deployment Rollout
         run: |
