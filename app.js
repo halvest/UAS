@@ -28,8 +28,8 @@ const httpRequestDurationMicroseconds = new client.Histogram({
     labelNames: ['method', 'route', 'code'],
     buckets: [0.1, 0.5, 1, 1.5] 
 });
-
 register.registerMetric(httpRequestDurationMicroseconds);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
@@ -40,6 +40,7 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Middleware untuk histogram request
 app.use((req, res, next) => {
   const end = httpRequestDurationMicroseconds.startTimer();
   res.on('finish', () => {
@@ -48,24 +49,23 @@ app.use((req, res, next) => {
   next();
 });
 
+// Endpoint Prometheus metrics
 app.get('/metrics', async (req, res) => {
     try {
         res.set('Content-Type', register.contentType);
         res.end(await register.metrics());
     } catch (ex) {
+        console.error('Error serving /metrics:', ex); // LOG ERROR
         res.status(500).end(ex);
     }
 });
 
-// --- PENAMBAHAN HEALTH CHECK ENDPOINT ---
-// Endpoint ini akan digunakan oleh Kubernetes untuk memeriksa apakah aplikasi sehat.
+// Endpoint health check
 app.get('/health', (req, res) => {
-    // Untuk saat ini, kita hanya mengirim status 'UP'.
-    // Di aplikasi nyata, ini bisa memeriksa koneksi database atau dependensi lainnya.
     res.status(200).json({ status: 'UP' });
 });
-// -----------------------------------------
 
+// Endpoint utama
 app.get('/', (req, res) => {
     if (req.session.isLoggedIn) {
         res.redirect('/dashboard');
@@ -74,14 +74,17 @@ app.get('/', (req, res) => {
     }
 });
 
+// Endpoint login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, user) => {
         if (err) {
+            console.error('Database error saat login:', err); // LOG ERROR
             return res.status(500).json({ success: false, message: 'Server error.' });
         }
         if (!user) {
             loginCounter.inc({ status: 'error' }); 
+            console.warn(`Login gagal untuk user: ${username}`); // LOG GAGAL
             return res.status(401).json({ success: false, message: 'Username atau password salah.' });
         }
         bcrypt.compare(password, user.password, (err, result) => {
@@ -89,15 +92,18 @@ app.post('/login', (req, res) => {
                 req.session.isLoggedIn = true;
                 req.session.username = username;
                 loginCounter.inc({ status: 'success' }); 
+                console.log(`Login berhasil untuk user: ${username}`); // LOG SUKSES
                 res.status(200).json({ success: true, message: 'Login berhasil! Mengarahkan...' });
             } else {
                 loginCounter.inc({ status: 'error' });
+                console.warn(`Login gagal (password salah) untuk user: ${username}`); // LOG GAGAL
                 res.status(401).json({ success: false, message: 'Username atau password salah.' });
             }
         });
     });
 });
 
+// Endpoint dashboard
 app.get('/dashboard', (req, res) => {
     if (req.session && req.session.isLoggedIn) {
         res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
@@ -106,12 +112,15 @@ app.get('/dashboard', (req, res) => {
     }
 });
 
+// Endpoint logout
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
+            console.error('Logout error:', err); // LOG ERROR
             return res.status(500).json({ success: false, message: 'Gagal untuk logout.' });
         }
-        res.clearCookie('connect.sid'); // Hapus cookie sesi dari browser.
+        console.log(`Logout berhasil untuk user: ${req.session?.username}`); // LOG SUKSES
+        res.clearCookie('connect.sid');
         res.status(200).json({ success: true, message: 'Logout berhasil.' });
     });
 });

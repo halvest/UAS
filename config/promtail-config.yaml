@@ -13,15 +13,17 @@ scrape_configs:
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
-    # --- PERBAIKAN: Menambahkan relabel_configs yang lebih pintar ---
-    # Aturan ini akan membuat label yang bersih dan mudah digunakan di Grafana.
     relabel_configs:
-      # 1. Membuat label 'container' dari nama asli kontainer.
+      # Membuat label 'container' dari nama asli kontainer.
       - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)'
         target_label: 'container'
-      
-      # 2. Membuat label 'app' dari label 'app' yang ada di kontainer.
-      # Ini adalah kunci utama agar kita bisa mencari log dengan mudah.
+      # Membuat label 'app' dari label 'app' yang ada di kontainer (jika ada).
       - source_labels: ['__meta_docker_container_label_app']
         target_label: 'app'
+      # (Opsional) Tambahkan label 'image' jika ingin filter berdasarkan image
+      - source_labels: ['__meta_docker_container_image']
+        target_label: 'image'
+      # (Opsional) Tambahkan label 'compose_service' jika pakai docker-compose
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'compose_service'
