@@ -6,12 +6,12 @@ on:
 
 jobs:
   test_and_analyze:
-    runs-on: self-hosted 
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -24,9 +24,13 @@ jobs:
       - name: Run tests with coverage
         run: npm test
 
-      - name: SonarQube Scan
-        run: docker run --rm --network=host -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" -v "${{ github.workspace }}:/usr/src" sonarsource/sonar-scanner-cli
-        shell: powershell
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2
+        with:
+          projectKey: ${{ secrets.SONAR_PROJECT_KEY }}
+          organization: ${{ secrets.SONAR_ORGANIZATION }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   build_and_push:
     needs: test_and_analyze
@@ -35,7 +39,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -61,25 +65,20 @@ jobs:
           kubectl set image deployment/login-app-deployment web-app=${{ secrets.DOCKERHUB_USERNAME }}/login-app:${{ github.sha }}
 
       - name: Verify Deployment Rollout
-        id: verify_rollout # Memberi ID pada step ini agar bisa direferensikan
+        id: verify_rollout
         shell: powershell
         run: |
           Write-Host "Verifying deployment rollout status..."
-          # Menggunakan try-catch agar pipeline tidak langsung berhenti jika gagal
           try {
             kubectl rollout status deployment/login-app-deployment --timeout=120s
           } catch {
-            # Mengatur variabel agar bisa dideteksi oleh step selanjutnya
             $host.SetShouldExit(1)
           }
-      
-      # --- PENAMBAHAN STEP ROLLBACK OTOMATIS ---
-      # Step ini hanya akan berjalan jika step 'verify_rollout' di atas gagal.
+
       - name: Rollback on Failure
-        if: failure() # Kondisi ini akan true jika step sebelumnya gagal
+        if: failure()
         shell: powershell
         run: |
           Write-Host "Deployment failed. Rolling back to the previous version..."
           kubectl rollout undo deployment/login-app-deployment
-          exit 1 # Keluar dengan status error untuk menandai bahwa job ini gagal
-        # ------------------------------------------
+          exit 1

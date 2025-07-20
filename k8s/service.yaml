@@ -10,3 +10,4 @@ spec:
   - protocol: TCP
     port: 3000       # Port yang diekspos oleh Service di dalam cluster.
     targetPort: 3000 # Port pada Pod tempat traffic akan diteruskan.
+    nodePort: 30001  # Port yang akan digunakan untuk mengakses Service dari luar cluster.

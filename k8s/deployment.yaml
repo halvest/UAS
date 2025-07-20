@@ -31,9 +31,22 @@ spec:
         - containerPort: 3000
         readinessProbe:
           httpGet:
-            path: /health  # Path ke endpoint health check yang dibuat di app.js
+            path: /health
             port: 3000
-          initialDelaySeconds: 5  # Tunggu 5 detik setelah container start sebelum probe pertama
-          periodSeconds: 10       # Ulangi probe setiap 10 detik
-          failureThreshold: 3     # Anggap pod gagal setelah 3x percobaan probe gagal
-        # ------------------------------------
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          failureThreshold: 5
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
