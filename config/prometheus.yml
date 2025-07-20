@@ -12,4 +12,4 @@ rule_files:
 scrape_configs:
   - job_name: 'login-app'
     static_configs:
-      - targets: ['host.docker.internal:31546']
+      - targets: ['host.docker.internal:30001']
