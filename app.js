@@ -40,7 +40,6 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Middleware untuk histogram request
 app.use((req, res, next) => {
   const end = httpRequestDurationMicroseconds.startTimer();
   res.on('finish', () => {
@@ -49,23 +48,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Endpoint Prometheus metrics
 app.get('/metrics', async (req, res) => {
     try {
         res.set('Content-Type', register.contentType);
         res.end(await register.metrics());
     } catch (ex) {
         console.error('Error serving /metrics:', ex); // LOG ERROR
-        res.status(500).end(ex);
+        res.status(500).end(ex.message);
     }
 });
 
-// Endpoint health check
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'UP' });
 });
 
-// Endpoint utama
 app.get('/', (req, res) => {
     if (req.session.isLoggedIn) {
         res.redirect('/dashboard');
@@ -74,7 +70,6 @@ app.get('/', (req, res) => {
     }
 });
 
-// Endpoint login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, user) => {
@@ -103,7 +98,6 @@ app.post('/login', (req, res) => {
     });
 });
 
-// Endpoint dashboard
 app.get('/dashboard', (req, res) => {
     if (req.session && req.session.isLoggedIn) {
         res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
@@ -112,7 +106,6 @@ app.get('/dashboard', (req, res) => {
     }
 });
 
-// Endpoint logout
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
@@ -125,5 +118,4 @@ app.post('/logout', (req, res) => {
     });
 });
 
-module.exportsts = app;
-module.exports = app;
+module.exports = { app, register };
