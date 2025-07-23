@@ -22,10 +22,18 @@ jobs:
         run: npm install
 
       - name: Run tests with coverage
-        run: npm test
+        run: npx jest --coverage
+
+      - name: Show coverage summary
+        run: cat coverage/lcov.info
 
       - name: SonarQube Scan
-        run: docker run --rm --network=host -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" -v "${{ github.workspace }}:/usr/src" sonarsource/sonar-scanner-cli
+        run: |
+          docker run --rm --network=host `
+            -e SONAR_HOST_URL="${{ secrets.SONAR_HOST_URL }}" `
+            -e SONAR_TOKEN="${{ secrets.SONAR_TOKEN }}" `
+            -v "${{ github.workspace }}:/usr/src" `
+            sonarsource/sonar-scanner-cli
         shell: powershell
 
   build_and_push:
@@ -69,11 +77,4 @@ jobs:
             Write-Error "Deployment failed. Check logs."
             exit 1
           }
-      - name: Jira Deployment Notification
-        uses: atlassian/gajira-deployment@v3
-        with:
-          host: ${{ secrets.JIRA_HOST }}
-          email: ${{ secrets.JIRA_EMAIL }}
-          token: ${{ secrets.JIRA_TOKEN }}
-          project: 'TND'
-          environment: 'production'
+
