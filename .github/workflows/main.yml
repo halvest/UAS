@@ -70,7 +70,7 @@ jobs:
             exit 1
           }
       - name: Jira Deployment Notification
-        uses: atlassian/gajira-actions/deployment@v3
+        uses: atlassian/gajira-deployment@v3
         with:
           host: ${{ secrets.JIRA_HOST }}
           email: ${{ secrets.JIRA_EMAIL }}
