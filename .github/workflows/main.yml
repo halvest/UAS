@@ -2,7 +2,7 @@ name: CI/CD Pipeline DevOps
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "TND-123-development" ]
 
 jobs:
   test_and_analyze:
@@ -69,4 +69,11 @@ jobs:
             Write-Error "Deployment failed. Check logs."
             exit 1
           }
-
+      - name: Jira Deployment Notification
+        uses: atlassian/gajira-actions/deployment@v3
+        with:
+          host: ${{ secrets.JIRA_HOST }}
+          email: ${{ secrets.JIRA_EMAIL }}
+          token: ${{ secrets.JIRA_TOKEN }}
+          project: 'TND'
+          environment: 'production'
